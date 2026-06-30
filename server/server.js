@@ -225,5 +225,5 @@ function broadcastWaitingList() {
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`✅ Fille AI Socket Server running on http://localhost:${PORT}`);
+  console.log(`✅ CURA AI Socket Server running on http://localhost:${PORT}`);
 });
