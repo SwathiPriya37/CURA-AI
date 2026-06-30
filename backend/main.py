@@ -1,5 +1,5 @@
 """
-Fille AI — FastAPI Backend
+CURA AI — FastAPI Backend
 POST /chat/   — main chatbot endpoint
 GET  /health  — health check
 """
@@ -15,16 +15,16 @@ import chatbot
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialise the chatbot pipeline (loads model + dataset + embeddings)
-    print("Starting Fille AI backend...")
+    print("Starting CURA AI backend...")
     chatbot.initialize()
     yield
     # Shutdown (nothing to clean up)
-    print("Shutting down Fille AI backend.")
+    print("Shutting down CURA AI backend.")
 
 
 # ─── App ──────────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="Fille AI — Women's Health Chatbot API",
+    title="CURA AI — Women's Health Chatbot API",
     description="RAG-powered chatbot using Sentence Transformers + Google Gemini",
     version="1.0.0",
     lifespan=lifespan,
@@ -64,7 +64,7 @@ def health_check():
 @app.post("/chat/", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     """
-    Send a message to Fille AI and receive a response.
+    Send a message to CURA AI and receive a response.
 
     - **message**: The user's health question or message
     - **response**: AI-generated response

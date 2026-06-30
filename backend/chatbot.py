@@ -1,5 +1,5 @@
 """
-Fille AI — RAG Chatbot Pipeline
+CURA AI — RAG Chatbot Pipeline
 Uses: altaidevorg/women-health-mini dataset + SentenceTransformers + Google Gemini
 """
 
@@ -21,7 +21,7 @@ DATASET_NAME = "altaidevorg/women-health-mini"
 TOP_K = 5  # Number of most-similar dataset entries to retrieve as context
 
 # Gemini system prompt
-SYSTEM_PROMPT = """You are Fille AI, a compassionate and knowledgeable women's health assistant.
+SYSTEM_PROMPT = """You are CURA AI, a compassionate and knowledgeable women's health assistant.
 
 Your role:
 - Provide clear, factual, and supportive responses about women's health topics
@@ -106,7 +106,7 @@ def initialize():
         _gemini_model = None
 
     _initialized = True
-    print("🚀 Fille AI chatbot initialized!")
+    print("🚀 CURA AI chatbot initialized!")
 
 
 def _cosine_similarity(query_embedding: np.ndarray, corpus_embeddings: np.ndarray) -> np.ndarray:
@@ -137,7 +137,7 @@ def _fallback_response(query: str) -> dict:
     """Return a helpful fallback when Gemini API is not configured."""
     return {
         "response": (
-            "I'm Fille AI, your women's health assistant. I'm currently unable to connect to "
+            "I'm CURA AI, your women's health assistant. I'm currently unable to connect to "
             "my AI reasoning engine because no API key has been configured.\n\n"
             "Please add your Google Gemini API key to `backend/.env` to enable full functionality.\n\n"
             "In the meantime, I recommend visiting trusted resources like the Office on Women's Health "
