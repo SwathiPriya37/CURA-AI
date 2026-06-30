@@ -57,7 +57,7 @@ def health_check():
         "status": "ok",
         "model_loaded": chatbot._initialized,
         "dataset_entries": len(chatbot._dataset_texts),
-        "gemini_configured": chatbot._gemini_model is not None,
+        "gemini_configured": chatbot._gemini_client is not None,
     }
 
 

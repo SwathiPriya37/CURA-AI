@@ -6,7 +6,8 @@ Uses: altaidevorg/women-health-mini dataset + SentenceTransformers + Google Gemi
 import os
 import numpy as np
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 # pyrefly: ignore [missing-import]
 from sentence_transformers import SentenceTransformer
 # pyrefly: ignore [missing-import]
@@ -46,67 +47,90 @@ Never diagnose conditions or prescribe medications. Always be supportive and enc
 _embedding_model: SentenceTransformer | None = None
 _dataset_texts: list[str] = []
 _dataset_embeddings: np.ndarray | None = None
-_gemini_model = None
+_gemini_client = None
 _initialized = False
 
 
 def initialize():
     """Load dataset, embeddings model, and configure Gemini. Called once at startup."""
-    global _embedding_model, _dataset_texts, _dataset_embeddings, _gemini_model, _initialized
+    global _embedding_model, _dataset_texts, _dataset_embeddings, _gemini_client, _initialized
 
     if _initialized:
         return
 
-    print("🔄 Loading SentenceTransformer model...")
+    print("Loading SentenceTransformer model...")
     _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-    print(f"🔄 Loading dataset: {DATASET_NAME}...")
+    print(f"Loading dataset: {DATASET_NAME}...")
     try:
         dataset = load_dataset(DATASET_NAME, split="train")
 
-        # Build a flat list of text entries from the dataset
-        # The women-health-mini dataset has 'question' and 'answer' columns
+        # The women-health-mini dataset has a 'conversations' column
+        # Each row has a list of dicts with 'role' and 'content'
         texts = []
         for row in dataset:
-            parts = []
-            if row.get("question"):
-                parts.append(f"Q: {row['question']}")
-            if row.get("answer"):
-                parts.append(f"A: {row['answer']}")
-            if parts:
-                texts.append("\n".join(parts))
+            conversations = row.get("conversations", [])
+            if conversations:
+                # Extract user question and assistant answer
+                user_msg = ""
+                assistant_msg = ""
+                for turn in conversations:
+                    role = turn.get("role", "")
+                    content = turn.get("content", "")
+                    if role == "user" and not user_msg:
+                        user_msg = content
+                    elif role == "assistant" and not assistant_msg:
+                        assistant_msg = content
+                if user_msg and assistant_msg:
+                    texts.append(f"Q: {user_msg}\nA: {assistant_msg}")
+            else:
+                # Fallback: try question/answer columns
+                parts = []
+                if row.get("question"):
+                    parts.append(f"Q: {row['question']}")
+                if row.get("answer"):
+                    parts.append(f"A: {row['answer']}")
+                if parts:
+                    texts.append("\n".join(parts))
 
-        _dataset_texts = texts
-        print(f"✅ Loaded {len(_dataset_texts)} dataset entries")
+        _dataset_texts = texts[:500]
+        print(f"Loaded {len(_dataset_texts)} dataset entries")
 
-        print("🔄 Computing dataset embeddings (this may take a moment)...")
-        _dataset_embeddings = _embedding_model.encode(
-            _dataset_texts,
-            batch_size=64,
-            show_progress_bar=True,
-            normalize_embeddings=True,
-        )
-        print(f"✅ Embeddings computed: shape {_dataset_embeddings.shape}")
+        print("Computing dataset embeddings (this may take a moment)...")
+        cache_path = os.path.join(os.path.dirname(__file__), "embeddings.npy")
+        if os.path.exists(cache_path):
+            print("Loading cached embeddings...")
+            _dataset_embeddings = np.load(cache_path)
+        else:
+            _dataset_embeddings = _embedding_model.encode(
+                _dataset_texts,
+                batch_size=64,
+                show_progress_bar=True,
+                normalize_embeddings=True,
+            )
+            np.save(cache_path, _dataset_embeddings)
+        print(f"Embeddings computed: shape {_dataset_embeddings.shape}")
 
     except Exception as e:
-        print(f"⚠️  Could not load dataset ({e}). Continuing without knowledge base.")
+        print(f"Warning: Could not load dataset ({e}). Continuing without knowledge base.")
         _dataset_texts = []
         _dataset_embeddings = None
 
-    print("🔄 Configuring Gemini API...")
+    print("Configuring Gemini API...")
     if GEMINI_API_KEY and GEMINI_API_KEY != "your_google_gemini_api_key_here":
-        genai.configure(api_key=GEMINI_API_KEY)
-        _gemini_model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=SYSTEM_PROMPT,
-        )
-        print("✅ Gemini API configured")
+        try:
+            _gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+            # Quick validation — list models to verify key works
+            print("Gemini API configured successfully")
+        except Exception as e:
+            print(f"Warning: Gemini API configuration failed: {e}")
+            _gemini_client = None
     else:
-        print("⚠️  No GEMINI_API_KEY set — responses will use fallback mode")
-        _gemini_model = None
+        print("Warning: No GEMINI_API_KEY set — responses will use fallback mode")
+        _gemini_client = None
 
     _initialized = True
-    print("🚀 CURA AI chatbot initialized!")
+    print("CURA AI chatbot initialized!")
 
 
 def _cosine_similarity(query_embedding: np.ndarray, corpus_embeddings: np.ndarray) -> np.ndarray:
@@ -160,7 +184,7 @@ def chat(user_message: str) -> dict:
     if not _initialized:
         initialize()
 
-    if not _gemini_model:
+    if not _gemini_client:
         return _fallback_response(user_message)
 
     # Retrieve relevant context from the knowledge base
@@ -174,7 +198,15 @@ def chat(user_message: str) -> dict:
         prompt = f"User question: {user_message}"
 
     try:
-        response = _gemini_model.generate_content(prompt)
+        response = _gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                temperature=0.7,
+                max_output_tokens=1024,
+            ),
+        )
         response_text = response.text.strip()
 
         # Check for escalation signal
