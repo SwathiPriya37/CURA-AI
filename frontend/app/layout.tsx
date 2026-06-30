@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fille AI — Women's Health Assistant",
+  title: "CURA AI — Women's Health Assistant",
   description:
-    "Fille AI is an AI-powered women's health chatbot providing clear, factual, and supportive health guidance with seamless access to certified doctors.",
-  keywords: ["women's health", "AI chatbot", "health assistant", "doctor chat", "Fille AI"],
-  authors: [{ name: "Fille AI" }],
+    "CURA AI is an AI-powered women's health chatbot providing clear, factual, and supportive health guidance with seamless access to certified doctors.",
+  keywords: ["women's health", "AI chatbot", "health assistant", "doctor chat", "CURA AI"],
+  authors: [{ name: "CURA AI" }],
   openGraph: {
-    title: "Fille AI — Women's Health Assistant",
+    title: "CURA AI — Women's Health Assistant",
     description: "AI-powered women's health chatbot with real-time doctor support.",
     type: "website",
   },

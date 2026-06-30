@@ -261,7 +261,7 @@ export default function HomePage() {
           </div>
 
           <p style={{ textAlign: "center", fontSize: "0.7rem", color: "#4a3a6e", marginTop: "10px" }}>
-            Fille AI provides general health information only. Always consult a qualified healthcare provider for medical decisions.
+            CURA AI provides general health information only. Always consult a qualified healthcare provider for medical decisions.
           </p>
         </div>
       </div>

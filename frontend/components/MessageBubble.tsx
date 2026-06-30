@@ -32,7 +32,7 @@ const roleConfig: Record<MessageRole, { label: string; Icon: React.ElementType; 
     iconBg: "linear-gradient(135deg, #7c3aed, #db2777)",
   },
   assistant: {
-    label: "Fille AI",
+    label: "CURA AI",
     Icon: Bot,
     colorClass: "prose",
     bubbleStyle: {

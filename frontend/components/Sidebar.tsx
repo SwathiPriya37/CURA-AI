@@ -55,7 +55,7 @@ export default function Sidebar({ onNewChat, chatCount, backendStatus }: Sidebar
           </div>
           <div>
             <p style={{ fontWeight: 800, fontSize: "1.1rem", background: "linear-gradient(135deg, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              Fille AI
+              CURA AI
             </p>
             <p style={{ fontSize: "0.7rem", color: "#7c6a9e", marginTop: "-2px" }}>Women's Health Assistant</p>
           </div>

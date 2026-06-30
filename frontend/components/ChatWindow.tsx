@@ -77,7 +77,7 @@ export default function ChatWindow({ messages, isTyping, isDoctorTyping }: ChatW
             </div>
             <div>
               <p style={{ fontSize: "1.125rem", fontWeight: 600, color: "#f8f4ff", marginBottom: "8px" }}>
-                Hello! I'm Fille AI
+                Hello! I'm CURA AI
               </p>
               <p style={{ fontSize: "0.9rem", color: "#7c6a9e", maxWidth: "340px", lineHeight: 1.6 }}>
                 Your compassionate women's health assistant. Ask me anything about reproductive health, menstrual wellness, hormones, nutrition, and more.
