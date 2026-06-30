@@ -1,4 +1,4 @@
-# 🌸 Fille AI — Women's Health Chatbot
+# 🌸 CURA AI — Women's Health Chatbot
 
 An AI-powered women's health assistant combining semantic search (Sentence Transformers), Google Gemini, and real-time doctor consultations via Socket.io.
 
