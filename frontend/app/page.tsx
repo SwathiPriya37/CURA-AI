@@ -4,9 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Send, Stethoscope, AlertTriangle, X, Sparkles } from "lucide-react";
 import ChatWindow from "@/components/ChatWindow";
 import Sidebar from "@/components/Sidebar";
-import DoctorChat from "@/components/DoctorChat";
 import { Message } from "@/components/MessageBubble";
 import { sendChatMessage, checkHealth } from "@/lib/api";
+import Link from "next/link";
 
 let msgCounter = 0;
 function newId() { return `msg_${++msgCounter}_${Date.now()}`; }
@@ -19,9 +19,6 @@ export default function HomePage() {
   const [isTyping, setIsTyping] = useState(false);
   const [backendStatus, setBackendStatus] = useState<BackendStatus>("loading");
   const [showEscalationBanner, setShowEscalationBanner] = useState(false);
-  const [showDoctorChat, setShowDoctorChat] = useState(false);
-  const [sessionId] = useState(() => `session_${Date.now()}`);
-  const [patientName] = useState("Patient");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Health-check on mount
@@ -94,13 +91,6 @@ export default function HomePage() {
   const handleNewChat = () => {
     setMessages([]);
     setShowEscalationBanner(false);
-    setShowDoctorChat(false);
-  };
-
-  const handleConnectDoctor = () => {
-    setShowEscalationBanner(false);
-    setShowDoctorChat(true);
-    addMessage("system", "🩺 Connecting you with a certified doctor. Please wait a moment…");
   };
 
   return (
@@ -136,18 +126,16 @@ export default function HomePage() {
             </div>
           </div>
 
-          <button
-            id="header-talk-to-doctor"
-            onClick={handleConnectDoctor}
-            className="btn btn-ghost btn-sm"
-            style={{
-              borderColor: "rgba(52,211,153,0.3)",
-              color: "#34d399",
-            }}
-          >
-            <Stethoscope size={15} />
-            Talk to a Doctor
-          </button>
+          <Link href="/patient" style={{ textDecoration: "none" }}>
+            <button
+              id="header-talk-to-doctor"
+              className="btn btn-ghost btn-sm"
+              style={{ borderColor: "rgba(52,211,153,0.3)", color: "#34d399" }}
+            >
+              <Stethoscope size={15} />
+              Talk to a Doctor
+            </button>
+          </Link>
         </header>
 
         {/* Escalation Banner */}
@@ -175,19 +163,20 @@ export default function HomePage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-              <button
-                id="escalation-connect-doctor"
-                onClick={handleConnectDoctor}
-                className="btn btn-sm"
-                style={{
-                  background: "linear-gradient(135deg, rgba(52,211,153,0.3), rgba(16,185,129,0.2))",
-                  border: "1px solid rgba(52,211,153,0.4)",
-                  color: "#34d399",
-                  fontWeight: 600,
-                }}
-              >
-                <Stethoscope size={13} /> Connect Now
-              </button>
+              <Link href="/patient" style={{ textDecoration: "none" }}>
+                <button
+                  id="escalation-connect-doctor"
+                  className="btn btn-sm"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(52,211,153,0.3), rgba(16,185,129,0.2))",
+                    border: "1px solid rgba(52,211,153,0.4)",
+                    color: "#34d399",
+                    fontWeight: 600,
+                  }}
+                >
+                  <Stethoscope size={13} /> Connect Now
+                </button>
+              </Link>
               <button
                 id="escalation-dismiss"
                 onClick={() => setShowEscalationBanner(false)}
@@ -266,14 +255,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Doctor Chat Panel */}
-      {showDoctorChat && (
-        <DoctorChat
-          sessionId={sessionId}
-          patientName={patientName}
-          onClose={() => setShowDoctorChat(false)}
-        />
-      )}
     </div>
   );
 }
