@@ -4,6 +4,7 @@ POST /chat/   — main chatbot endpoint
 GET  /health  — health check
 """
 
+import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +15,11 @@ import chatbot
 # ─── Lifespan (startup/shutdown) ──────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: initialise the chatbot pipeline (loads model + dataset + embeddings)
-    print("Starting CURA AI backend...")
-    chatbot.initialize()
+    # Startup: kick off heavy init in a background thread so the port binds immediately.
+    # Render (and similar hosts) require the port to open within ~60s of startup.
+    print("Starting CURA AI backend — initializing model in background thread...")
+    init_thread = threading.Thread(target=chatbot.initialize, daemon=True)
+    init_thread.start()
     yield
     # Shutdown (nothing to clean up)
     print("Shutting down CURA AI backend.")
@@ -32,8 +35,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins for production; restrict after deployment if needed
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -54,7 +57,7 @@ class ChatResponse(BaseModel):
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok",
+        "status": "ok" if chatbot._initialized else "warming_up",
         "model_loaded": chatbot._initialized,
         "dataset_entries": len(chatbot._dataset_texts),
         "gemini_configured": chatbot._gemini_client is not None,
@@ -73,6 +76,13 @@ async def chat_endpoint(request: ChatRequest):
     """
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    # If still initializing, return a friendly 503 instead of crashing
+    if not chatbot._initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="CURA AI is still warming up. Please try again in a few moments.",
+        )
 
     result = chatbot.chat(request.message.strip())
     return ChatResponse(**result)
