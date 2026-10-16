@@ -21,12 +21,15 @@ export default function HomePage() {
   const [showEscalationBanner, setShowEscalationBanner] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Health-check on mount
+  // Health-check on mount, then poll every 30s
   useEffect(() => {
-    (async () => {
+    const poll = async () => {
       const ok = await checkHealth();
       setBackendStatus(ok ? "online" : "offline");
-    })();
+    };
+    poll();
+    const interval = setInterval(poll, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Listen for suggestion-chip clicks from child components
@@ -75,7 +78,8 @@ export default function HomePage() {
         setShowEscalationBanner(true);
       }
     } catch (err) {
-      addMessage("system", "⚠️ Unable to reach the AI backend. Please ensure the FastAPI server is running on port 8000.");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      addMessage("system", `⚠️ Could not reach the AI backend: ${msg}. Check your connection or try again shortly.`);
     } finally {
       setIsTyping(false);
     }
