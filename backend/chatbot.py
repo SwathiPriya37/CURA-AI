@@ -4,16 +4,15 @@ Uses: altaidevorg/women-health-mini dataset + SentenceTransformers + Google Gemi
 """
 
 import os
+from typing import Any
 import numpy as np
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-# pyrefly: ignore [missing-import]
-from sentence_transformers import SentenceTransformer
-# pyrefly: ignore [missing-import]
-from datasets import load_dataset
 
 load_dotenv()
+
+# Heavy ML imports (torch, sentence_transformers, datasets, google-genai) are
+# intentionally deferred to initialize() so uvicorn can import this module
+# and bind the port BEFORE any large libraries are loaded.
 
 # ─── Configuration ─────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -44,10 +43,10 @@ Never diagnose conditions or prescribe medications. Always be supportive and enc
 """
 
 # ─── Module-Level State ────────────────────────────────────────────────────────
-_embedding_model: SentenceTransformer | None = None
+_embedding_model: Any = None  # SentenceTransformer, imported lazily
 _dataset_texts: list[str] = []
 _dataset_embeddings: np.ndarray | None = None
-_gemini_client = None
+_gemini_client: Any = None   # google.genai.Client, imported lazily
 _initialized = False
 
 
@@ -58,11 +57,19 @@ def initialize():
     if _initialized:
         return
 
-    print("Loading SentenceTransformer model...")
-    _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-
-    print(f"Loading dataset: {DATASET_NAME}...")
     try:
+        print("[CURA] Importing SentenceTransformers...", flush=True)
+        from sentence_transformers import SentenceTransformer  # noqa: PLC0415
+        print("[CURA] Loading SentenceTransformer model...", flush=True)
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        print("[CURA] SentenceTransformer loaded.", flush=True)
+    except Exception as exc:
+        print(f"[CURA] ERROR loading SentenceTransformer: {exc}", flush=True)
+        _embedding_model = None
+
+    print(f"[CURA] Loading dataset: {DATASET_NAME}...", flush=True)
+    try:
+        from datasets import load_dataset  # noqa: PLC0415
         dataset = load_dataset(DATASET_NAME, split="train")
 
         # The women-health-mini dataset has a 'conversations' column
@@ -116,21 +123,21 @@ def initialize():
         _dataset_texts = []
         _dataset_embeddings = None
 
-    print("Configuring Gemini API...")
+    print("[CURA] Configuring Gemini API...", flush=True)
     if GEMINI_API_KEY and GEMINI_API_KEY != "your_google_gemini_api_key_here":
         try:
+            from google import genai          # noqa: PLC0415
             _gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-            # Quick validation — list models to verify key works
-            print("Gemini API configured successfully")
+            print("[CURA] Gemini API configured successfully", flush=True)
         except Exception as e:
-            print(f"Warning: Gemini API configuration failed: {e}")
+            print(f"[CURA] Warning: Gemini API configuration failed: {e}", flush=True)
             _gemini_client = None
     else:
-        print("Warning: No GEMINI_API_KEY set — responses will use fallback mode")
+        print("[CURA] Warning: No GEMINI_API_KEY set — responses will use fallback mode", flush=True)
         _gemini_client = None
 
     _initialized = True
-    print("CURA AI chatbot initialized!")
+    print("[CURA] CURA AI chatbot initialized!", flush=True)
 
 
 def _cosine_similarity(query_embedding: np.ndarray, corpus_embeddings: np.ndarray) -> np.ndarray:
@@ -198,6 +205,7 @@ def chat(user_message: str) -> dict:
         prompt = f"User question: {user_message}"
 
     try:
+        from google.genai import types  # noqa: PLC0415
         response = _gemini_client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
