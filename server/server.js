@@ -25,6 +25,10 @@ const waitingPatients = new Map();
 const connectedDoctors = new Set();
 
 // ─── REST Endpoints ───────────────────────────────────────────────────────────
+
+// Silence Chrome DevTools JSON probe (prevents 404 + CSP errors in browser console)
+app.get("/.well-known/appspecific/com.chrome.devtools.json", (_req, res) => res.json({}));
+
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
