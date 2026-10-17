@@ -5,7 +5,7 @@ import { Send, Stethoscope, AlertTriangle, X, Sparkles } from "lucide-react";
 import ChatWindow from "@/components/ChatWindow";
 import Sidebar from "@/components/Sidebar";
 import { Message } from "@/components/MessageBubble";
-import { sendChatMessage, checkHealth } from "@/lib/api";
+import { sendChatMessage, checkHealth, HealthStatus } from "@/lib/api";
 import Link from "next/link";
 
 let msgCounter = 0;
@@ -18,14 +18,17 @@ export default function HomePage() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [backendStatus, setBackendStatus] = useState<BackendStatus>("loading");
+  const [healthInfo, setHealthInfo] = useState<HealthStatus | null>(null);
   const [showEscalationBanner, setShowEscalationBanner] = useState(false);
+  const [warmupStatus, setWarmupStatus] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Health-check on mount, then poll every 30s
   useEffect(() => {
     const poll = async () => {
-      const ok = await checkHealth();
-      setBackendStatus(ok ? "online" : "offline");
+      const health = await checkHealth();
+      setHealthInfo(health);
+      setBackendStatus(health.ok ? "online" : "offline");
     };
     poll();
     const interval = setInterval(poll, 30_000);
@@ -68,16 +71,21 @@ export default function HomePage() {
 
     addMessage("user", text);
     setIsTyping(true);
+    setWarmupStatus(null);
 
     try {
-      const result = await sendChatMessage(text);
+      const result = await sendChatMessage(text, (attempt, max) => {
+        setWarmupStatus(`⏳ Backend is warming up... retrying (${attempt}/${max})`);
+      });
 
+      setWarmupStatus(null);
       addMessage("assistant", result.response, result.context_used);
 
       if (result.escalate) {
         setShowEscalationBanner(true);
       }
     } catch (err) {
+      setWarmupStatus(null);
       const msg = err instanceof Error ? err.message : "Unknown error";
       addMessage("system", `⚠️ Could not reach the AI backend: ${msg}. Check your connection or try again shortly.`);
     } finally {
@@ -195,6 +203,25 @@ export default function HomePage() {
 
         {/* Chat Window */}
         <ChatWindow messages={messages} isTyping={isTyping} />
+
+        {/* Warmup status banner */}
+        {warmupStatus && (
+          <div
+            className="fade-in"
+            style={{
+              margin: "0 16px 8px",
+              padding: "10px 16px",
+              borderRadius: "10px",
+              background: "rgba(139,92,246,0.08)",
+              border: "1px solid rgba(139,92,246,0.25)",
+              fontSize: "0.8rem",
+              color: "#a78bfa",
+              textAlign: "center",
+            }}
+          >
+            {warmupStatus}
+          </div>
+        )}
 
         {/* Input Area */}
         <div
