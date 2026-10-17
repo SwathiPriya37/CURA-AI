@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       context_used: false,
     }));
 
-    // 503 = still warming up — surface gracefully
+    // 503 = still warming up — return 503 so frontend can auto-retry
     if (backendRes.status === 503) {
       return NextResponse.json(
         {
@@ -28,8 +28,9 @@ export async function POST(req: NextRequest) {
             "⏳ CURA AI is still warming up (loading the AI model). Please wait a moment and try again!",
           escalate: false,
           context_used: false,
+          warming_up: true,
         },
-        { status: 200 }
+        { status: 503 }
       );
     }
 

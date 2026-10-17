@@ -1,4 +1,5 @@
 services:
+  # ── Python / FastAPI backend ───────────────────────────────────────────────
   - type: web
     name: cura-ai-backend
     runtime: python
@@ -13,3 +14,19 @@ services:
         value: 3.11.0
       - key: PYTHONUNBUFFERED
         value: "1"
+
+  # ── Next.js frontend ──────────────────────────────────────────────────────
+  - type: web
+    name: cura-ai-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      # ⚠️ IMPORTANT: Set this to your deployed backend URL in Render dashboard.
+      # Example: https://cura-ai-backend.onrender.com
+      - key: BACKEND_API_URL
+        sync: false
+      # Keep for local dev fallback (not used in production)
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
